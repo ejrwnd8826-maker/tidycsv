@@ -3,10 +3,9 @@
  *
  * 리포트 데이터를 HTML 문자열로 변환한다. 모든 사용자 데이터(CSV 셀)는
  * escapeHtml 로 이스케이프해 표 구조 깨짐·HTML 주입을 방지한다.
- * DOM 조작은 main.ts 가 담당하고, 여기서는 문자열만 만든다(테스트 용이).
+ * 모든 라벨은 i18n(t)로, 이슈 메시지는 localizeIssueMessage 로 현 로케일 반영.
  */
 
-import type { CleanReport } from "../clean/report.js";
 import type {
   AnalysisReport,
   BalanceCheck,
@@ -15,6 +14,7 @@ import type {
   ReferentialCheck,
   SumCheck,
 } from "../types.js";
+import { localizeIssueMessage, t } from "./i18n.js";
 
 /** UI 에서 편집하는 정합성 규칙 묶음. */
 export interface IntegrityRuleSet {
@@ -22,13 +22,6 @@ export interface IntegrityRuleSet {
   balanceChecks: BalanceCheck[];
   referentialChecks: ReferentialCheck[];
 }
-
-const CATEGORY_LABEL: Record<IssueCategory, string> = {
-  duplicate: "중복",
-  format: "포맷",
-  outlier: "이상치",
-  integrity: "정합성",
-};
 
 /** HTML 특수문자 이스케이프. */
 export function escapeHtml(s: string): string {
@@ -40,12 +33,16 @@ export function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/** 영향 행 인덱스를 "N개 (예: 0, 2, 4…)" 형태로. */
+function catLabel(c: IssueCategory): string {
+  return t(`cat.${c}`);
+}
+
+/** 영향 행 인덱스를 "N개 (행 0, 2, 4…)" 형태로. */
 function formatRows(rows: number[] | undefined): string {
   if (!rows || rows.length === 0) return "-";
   const sample = rows.slice(0, 5).join(", ");
   const more = rows.length > 5 ? "…" : "";
-  return `${rows.length}개 (행 ${sample}${more})`;
+  return t("rows.count", { n: rows.length, sample, more });
 }
 
 function severityBadge(sev: string): string {
@@ -60,17 +57,16 @@ export function summaryHtml(report: AnalysisReport): string {
   return `
 <section class="summary">
   <div class="file-info">
-    <strong>${report.table.rowCount.toLocaleString()}</strong>행 ·
-    <strong>${report.table.columnCount}</strong>열 분석 완료
+    ${t("summary.analyzed", { rows: report.table.rowCount.toLocaleString(), cols: report.table.columnCount })}
   </div>
   <div class="cards">
-    <div class="card card-total"><span class="num">${s.totalIssues}</span><span class="lbl">총 이슈</span></div>
+    <div class="card card-total"><span class="num">${s.totalIssues}</span><span class="lbl">${t("summary.total")}</span></div>
     <div class="card card-error"><span class="num">${sev.error}</span><span class="lbl">error</span></div>
     <div class="card card-warning"><span class="num">${sev.warning}</span><span class="lbl">warning</span></div>
     <div class="card card-info"><span class="num">${sev.info}</span><span class="lbl">info</span></div>
   </div>
   <div class="cat-line">
-    중복 ${cat.duplicate} · 포맷 ${cat.format} · 이상치 ${cat.outlier} · <strong>정합성 ${cat.integrity}</strong>
+    ${t("summary.catline", { dup: cat.duplicate, fmt: cat.format, out: cat.outlier, integ: cat.integrity })}
   </div>
 </section>`;
 }
@@ -79,29 +75,28 @@ export function summaryHtml(report: AnalysisReport): string {
 function issueRow(i: Issue): string {
   return `<tr>
   <td>${severityBadge(i.severity)}</td>
-  <td>${escapeHtml(CATEGORY_LABEL[i.category])}</td>
+  <td>${escapeHtml(catLabel(i.category))}</td>
   <td><code>${escapeHtml(i.type)}</code></td>
   <td>${escapeHtml(i.columnName ?? "-")}</td>
   <td>${formatRows(i.rows)}</td>
-  <td>${escapeHtml(i.message)}</td>
+  <td>${escapeHtml(localizeIssueMessage(i))}</td>
 </tr>`;
 }
 
 /** 검출 이슈 목록 테이블. */
 export function issuesHtml(report: AnalysisReport): string {
   if (report.issues.length === 0) {
-    return `<section class="issues"><p class="empty">✅ 검출된 이슈가 없습니다.</p></section>`;
+    return `<section class="issues"><p class="empty">${t("issues.none")}</p></section>`;
   }
-  // 심각도 순(error→warning→info)으로 정렬.
   const order: Record<string, number> = { error: 0, warning: 1, info: 2 };
   const sorted = [...report.issues].sort(
     (a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9),
   );
   return `
 <section class="issues">
-  <h2>검출 이슈 (${report.issues.length})</h2>
+  <h2>${t("issues.title", { n: report.issues.length })}</h2>
   <table>
-    <thead><tr><th>심각도</th><th>카테고리</th><th>유형</th><th>컬럼</th><th>영향 행</th><th>내용</th></tr></thead>
+    <thead><tr><th>${t("issues.th.severity")}</th><th>${t("issues.th.category")}</th><th>${t("issues.th.type")}</th><th>${t("issues.th.column")}</th><th>${t("issues.th.rows")}</th><th>${t("issues.th.message")}</th></tr></thead>
     <tbody>
       ${sorted.map(issueRow).join("\n")}
     </tbody>
@@ -122,30 +117,34 @@ function options(headers: string[]): string {
     .join("");
 }
 
+function code(s: string): string {
+  return `<code>${escapeHtml(s)}</code>`;
+}
+
 /** 현재 등록된 규칙 목록(삭제 버튼 포함). */
 function currentRulesHtml(rules: IntegrityRuleSet): string {
+  const del = (kind: string, i: number): string =>
+    `<button class="btn-del" data-act="del" data-kind="${kind}" data-idx="${i}">${t("rules.del")}</button>`;
   const items: string[] = [];
   rules.sumChecks.forEach((r, i) => {
     items.push(
-      `<li>합계: <code>${r.components.map(escapeHtml).join(" + ")}</code> = <code>${escapeHtml(r.total)}</code> <button class="btn-del" data-act="del" data-kind="sum" data-idx="${i}">삭제</button></li>`,
+      `<li>${t("rules.li.sum", { components: r.components.map(escapeHtml).join(" + "), total: code(r.total) })} ${del("sum", i)}</li>`,
     );
   });
   rules.balanceChecks.forEach((r, i) => {
     items.push(
-      `<li>잔액: <code>${escapeHtml(r.balance)}</code> = 직전 + <code>${escapeHtml(r.amount)}</code> <button class="btn-del" data-act="del" data-kind="balance" data-idx="${i}">삭제</button></li>`,
+      `<li>${t("rules.li.bal", { balance: code(r.balance), amount: code(r.amount) })} ${del("balance", i)}</li>`,
     );
   });
   rules.referentialChecks.forEach((r, i) => {
-    const ref =
+    const text =
       "column" in r.references
-        ? `컬럼 <code>${escapeHtml(r.references.column)}</code>`
-        : `값 [${r.references.values.map(escapeHtml).join(", ")}]`;
-    items.push(
-      `<li>참조: <code>${escapeHtml(r.column)}</code> ∈ ${ref} <button class="btn-del" data-act="del" data-kind="ref" data-idx="${i}">삭제</button></li>`,
-    );
+        ? t("rules.li.ref.col", { column: code(r.column), ref: code(r.references.column) })
+        : t("rules.li.ref.val", { column: code(r.column), ref: r.references.values.map(escapeHtml).join(", ") });
+    items.push(`<li>${text} ${del("ref", i)}</li>`);
   });
   if (items.length === 0) {
-    return `<p class="empty">아직 규칙이 없습니다. 위에서 컬럼을 골라 추가하세요.</p>`;
+    return `<p class="empty">${t("rules.none")}</p>`;
   }
   return `<ul class="rule-list">${items.join("")}</ul>`;
 }
@@ -159,42 +158,42 @@ export function rulesPanelHtml(
   const opt = options(headers);
   return `
 <section class="rules-panel">
-  <h2>정합성 규칙 추가 <span class="hint">(합계·잔액·참조 — 내 데이터에 맞게 지정)</span></h2>
+  <h2>${t("rules.title")} <span class="hint">${t("rules.hint")}</span></h2>
   <div class="rule-forms">
     <div class="rule-form">
-      <strong>합계 검증</strong>
-      <label>구성요소 (Ctrl+클릭 다중 선택)</label>
+      <strong>${t("rules.sum")}</strong>
+      <label>${t("rules.sum.components")}</label>
       <select multiple size="4" data-f="sum-components">${opt}</select>
-      <label>합계 컬럼</label>
+      <label>${t("rules.sum.total")}</label>
       <select data-f="sum-total">${opt}</select>
-      <button class="btn" data-act="add-sum">+ 합계 규칙</button>
+      <button class="btn" data-act="add-sum">${t("rules.sum.add")}</button>
     </div>
     <div class="rule-form">
-      <strong>잔액 검증</strong>
-      <label>증감액</label>
+      <strong>${t("rules.bal")}</strong>
+      <label>${t("rules.bal.amount")}</label>
       <select data-f="bal-amount">${opt}</select>
-      <label>잔액(누적)</label>
+      <label>${t("rules.bal.balance")}</label>
       <select data-f="bal-balance">${opt}</select>
-      <button class="btn" data-act="add-balance">+ 잔액 규칙</button>
+      <button class="btn" data-act="add-balance">${t("rules.bal.add")}</button>
     </div>
     <div class="rule-form">
-      <strong>참조 무결성</strong>
-      <label>검사 컬럼</label>
+      <strong>${t("rules.ref")}</strong>
+      <label>${t("rules.ref.column")}</label>
       <select data-f="ref-column">${opt}</select>
-      <label>참조 컬럼</label>
-      <select data-f="ref-refcol"><option value="">(허용값 직접입력)</option>${opt}</select>
-      <label>또는 허용값(쉼표 구분)</label>
+      <label>${t("rules.ref.refcol")}</label>
+      <select data-f="ref-refcol"><option value="">${t("rules.ref.useValues")}</option>${opt}</select>
+      <label>${t("rules.ref.values")}</label>
       <input type="text" data-f="ref-values" placeholder="paid, pending, shipped" />
-      <button class="btn" data-act="add-ref">+ 참조 규칙</button>
+      <button class="btn" data-act="add-ref">${t("rules.ref.add")}</button>
     </div>
   </div>
-  <h3>현재 규칙</h3>
+  <h3>${t("rules.current")}</h3>
   ${currentRulesHtml(rules)}
 </section>`;
 }
 
 /** 정제 before/after 섹션. */
-export function cleanHtml(report: CleanReport): string {
+export function cleanHtml(report: import("../clean/report.js").CleanReport): string {
   const { before, clean, after } = report;
   const bf = clean.summary.byFixer;
 
@@ -220,41 +219,41 @@ export function cleanHtml(report: CleanReport): string {
   <td>${severityBadge(i.severity)}</td>
   <td><code>${escapeHtml(i.type)}</code></td>
   <td>${escapeHtml(i.columnName ?? "-")}</td>
-  <td>${escapeHtml(i.message)}</td>
+  <td>${escapeHtml(localizeIssueMessage(i))}</td>
 </tr>`,
     )
     .join("\n");
 
   const changesBlock =
     clean.cellChanges.length === 0
-      ? `<p class="empty">자동 수정할 셀이 없습니다.</p>`
+      ? `<p class="empty">${t("clean.fixed.none")}</p>`
       : `<table>
-    <thead><tr><th>행</th><th>컬럼</th><th>before</th><th>after</th><th>종류</th></tr></thead>
+    <thead><tr><th>${t("clean.th.row")}</th><th>${t("clean.th.column")}</th><th>before</th><th>after</th><th>${t("clean.th.fixer")}</th></tr></thead>
     <tbody>${changeRows}</tbody>
   </table>
-  ${clean.cellChanges.length > 100 ? `<p class="note">…외 ${clean.cellChanges.length - 100}건</p>` : ""}`;
+  ${clean.cellChanges.length > 100 ? `<p class="note">${t("clean.more", { n: clean.cellChanges.length - 100 })}</p>` : ""}`;
 
   const manualBlock =
     manual.length === 0
-      ? `<p class="empty">수동 검토가 필요한 이슈가 없습니다.</p>`
+      ? `<p class="empty">${t("clean.manual.none")}</p>`
       : `<table>
-    <thead><tr><th>심각도</th><th>유형</th><th>컬럼</th><th>내용</th></tr></thead>
+    <thead><tr><th>${t("issues.th.severity")}</th><th>${t("issues.th.type")}</th><th>${t("issues.th.column")}</th><th>${t("issues.th.message")}</th></tr></thead>
     <tbody>${manualRows}</tbody>
   </table>`;
 
   return `
 <section class="clean-report">
-  <h2>정제 결과 (before / after)</h2>
+  <h2>${t("clean.title")}</h2>
   <div class="clean-summary">
-    <div>행: <strong>${before.table.rowCount}</strong> → <strong>${after.table.rowCount}</strong> (중복 ${clean.summary.rowsRemoved}건 제거)</div>
-    <div>자동 수정 셀: <strong>${clean.summary.cellsChanged}</strong>건 (공백 ${bf.whitespace} · 숫자 ${bf.number_format} · 날짜 ${bf.date_format})</div>
-    <div>검출 이슈: <strong>${before.summary.totalIssues}</strong> → <strong>${after.summary.totalIssues}</strong> (해결 ${before.summary.totalIssues - after.summary.totalIssues}건)</div>
+    <div>${t("clean.rows", { before: before.table.rowCount, after: after.table.rowCount, removed: clean.summary.rowsRemoved })}</div>
+    <div>${t("clean.cells", { n: clean.summary.cellsChanged, ws: bf.whitespace, num: bf.number_format, date: bf.date_format })}</div>
+    <div>${t("clean.issues", { before: before.summary.totalIssues, after: after.summary.totalIssues, resolved: before.summary.totalIssues - after.summary.totalIssues })}</div>
   </div>
 
-  <h3>자동 수정 내역 <span class="hint">(행 번호는 원본 CSV 기준)</span></h3>
+  <h3>${t("clean.fixed.title")} <span class="hint">${t("clean.fixed.hint")}</span></h3>
   ${changesBlock}
 
-  <h3>수동 검토 필요 <span class="hint">(정합성·이상치 — 자동 수정 대상 아님)</span></h3>
+  <h3>${t("clean.manual.title")} <span class="hint">${t("clean.manual.hint")}</span></h3>
   ${manualBlock}
 </section>`;
 }

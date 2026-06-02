@@ -22,6 +22,8 @@ describe("UI 스모크 (jsdom)", () => {
     document.body.innerHTML = body;
     // jsdom 미구현 메서드 stub
     Element.prototype.scrollIntoView = () => {};
+    // 로케일 고정(ko) — jsdom navigator.language 가 en-US 라 명시 설정.
+    localStorage.setItem("tidycsv_locale", "ko");
     // main.ts 는 import 시 DOM 에 이벤트를 연결한다(위에서 body 준비 후 import).
     await import("./main.js");
   });
@@ -48,6 +50,15 @@ describe("UI 스모크 (jsdom)", () => {
     expect(cleanResults.innerHTML).toContain("자동 수정 내역");
     expect(cleanResults.innerHTML).toContain("Alice"); // 공백 정리된 값
     expect((byId("download-btn") as HTMLButtonElement).hidden).toBe(false);
+
+    // 3) 언어 토글(EN) → 결과·규칙·정제가 영어로 재렌더
+    (byId("lang-toggle") as HTMLButtonElement).click();
+    expect(byId("results").innerHTML).toContain("Total issues");
+    expect(byId("rules").innerHTML).toContain("Add integrity rules");
+    expect(byId("clean-results").innerHTML).toContain("Cleaning result");
+    // 다음 테스트를 위해 KO 로 복귀
+    (byId("lang-toggle") as HTMLButtonElement).click();
+    expect(byId("results").innerHTML).toContain("총 이슈");
   });
 
   it("정합성 규칙 추가/삭제 → 재분석이 반영된다", () => {

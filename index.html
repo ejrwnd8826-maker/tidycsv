@@ -30,13 +30,15 @@
     <meta name="twitter:card" content="summary" />
   </head>
   <body>
+    <button id="lang-toggle" class="lang-toggle" type="button">EN</button>
+
     <header class="site-header">
       <h1>tidy<span>csv</span></h1>
-      <p class="tagline">
+      <p class="tagline" data-i18n="site.tagline">
         지저분한 CSV를 넣으면 <strong>중복·포맷오류·이상치·정합성 불일치</strong>를
         잡아 정리하고 리포트합니다.
       </p>
-      <p class="privacy">
+      <p class="privacy" data-i18n="site.privacy">
         🔒 올린 파일은 내 컴퓨터에서만 처리돼요 · AI 없이 · 언제 돌려도 같은 결과
       </p>
     </header>
@@ -45,11 +47,11 @@
       <div id="dropzone" class="dropzone" role="button" tabindex="0">
         <div class="dz-inner">
           <div class="dz-icon">⬆</div>
-          <div class="dz-text">
+          <div class="dz-text" data-i18n="dz.text">
             CSV·엑셀(.xlsx) 파일을 끌어다 놓거나 <u>클릭해 선택</u>
           </div>
-          <div class="dz-sub">또는</div>
-          <button id="sample-btn" type="button" class="btn btn-ghost">
+          <div class="dz-sub" data-i18n="dz.or">또는</div>
+          <button id="sample-btn" type="button" class="btn btn-ghost" data-i18n="btn.sample">
             예제 데이터 불러오기
           </button>
         </div>
@@ -67,10 +69,10 @@
       <div id="results" class="results"></div>
 
       <div id="clean-actions" class="clean-actions" hidden>
-        <button id="clean-btn" type="button" class="btn btn-primary">
+        <button id="clean-btn" type="button" class="btn btn-primary" data-i18n="btn.clean">
           🧹 자동 정제하기
         </button>
-        <button id="download-btn" type="button" class="btn btn-download" hidden>
+        <button id="download-btn" type="button" class="btn btn-download" hidden data-i18n="btn.download">
           ⬇ 정제된 CSV 다운로드
         </button>
       </div>
@@ -80,10 +82,8 @@
 
     <footer class="site-footer">
       <p>
-        tidycsv · 오픈소스 데이터 정합성 도구 ·
-        <a href="https://github.com/duke-yoon/tidycsv" rel="noopener"
-          >GitHub</a
-        >
+        <span data-i18n="footer.text">tidycsv · 오픈소스 데이터 정합성 도구 ·</span>
+        <a href="https://github.com/duke-yoon/tidycsv" rel="noopener">GitHub</a>
       </p>
     </footer>
 

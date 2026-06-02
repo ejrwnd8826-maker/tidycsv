@@ -2,8 +2,8 @@
  * UI 진입점 — DOM 연결.
  *
  * 업로드(CSV/엑셀) → 분석 → 결과 표시 → 정합성 규칙 추가 → 재분석 →
- * 정제 → 다운로드. 전부 브라우저 로컬(서버 없음).
- * 순수 렌더는 view.ts, 데이터 처리는 코어 엔진(../index.js)에 위임한다.
+ * 정제 → 다운로드. 전부 브라우저 로컬(서버 없음). KO/EN 이중언어.
+ * 순수 렌더는 view.ts, 다국어는 i18n.ts, 데이터 처리는 코어 엔진에 위임.
  */
 
 import "./styles.css";
@@ -11,6 +11,7 @@ import { cleanAndReport } from "../clean/report.js";
 import { analyzeTable } from "../engine.js";
 import { parseCsv, toCsv } from "../parse/csv.js";
 import type { EngineOptions, ParsedTable } from "../types.js";
+import { getLocale, initLocale, setLocale, t } from "./i18n.js";
 import { SAMPLE_CSV, SAMPLE_ENGINE_OPTIONS, SAMPLE_NAME } from "./sample.js";
 import type { IntegrityRuleSet } from "./view.js";
 import { cleanHtml, resultsHtml, rulesPanelHtml } from "./view.js";
@@ -31,10 +32,12 @@ const cleanBtn = el<HTMLButtonElement>("clean-btn");
 const cleanResults = el<HTMLDivElement>("clean-results");
 const downloadBtn = el<HTMLButtonElement>("download-btn");
 const fileLabel = el<HTMLSpanElement>("file-label");
+const langToggle = el<HTMLButtonElement>("lang-toggle");
 
 let currentTable: ParsedTable | null = null;
 let currentName = "data.csv";
 let cleanedCsv = "";
+let cleanShown = false;
 let currentRules: IntegrityRuleSet = {
   sumChecks: [],
   balanceChecks: [],
@@ -53,6 +56,34 @@ function buildOptions(): EngineOptions {
   };
 }
 
+/** index.html 의 data-i18n 정적 텍스트를 현 로케일로 채운다. */
+function applyStaticI18n(): void {
+  document.querySelectorAll<HTMLElement>("[data-i18n]").forEach((node) => {
+    const key = node.getAttribute("data-i18n");
+    if (key) node.innerHTML = t(key);
+  });
+  langToggle.textContent = getLocale() === "ko" ? "EN" : "한국어";
+  document.documentElement.lang = getLocale();
+  updateFileLabel();
+}
+
+function updateFileLabel(): void {
+  if (currentTable === null) {
+    fileLabel.textContent = "";
+    return;
+  }
+  fileLabel.textContent = t("file.label", {
+    name: currentName,
+    rows: currentTable.rowCount.toLocaleString(),
+  });
+}
+
+function showError(msgKey: string, msg?: string): void {
+  resultsEl.innerHTML = `<p class="error-msg">${
+    msg === undefined ? t(msgKey) : t(msgKey, { msg })
+  }</p>`;
+}
+
 /** 현재 테이블·규칙으로 재분석하고 결과·규칙 패널을 갱신. */
 function reanalyze(): void {
   if (currentTable === null) return;
@@ -60,8 +91,6 @@ function reanalyze(): void {
   resultsEl.innerHTML = resultsHtml(report);
   rulesEl.innerHTML = rulesPanelHtml(currentTable.headers, currentRules);
   cleanActions.hidden = false;
-  cleanResults.innerHTML = "";
-  downloadBtn.hidden = true;
 }
 
 /** 테이블을 적재하고 분석 시작. */
@@ -73,8 +102,11 @@ function loadTable(
   currentTable = table;
   currentName = name;
   currentRules = rules;
-  fileLabel.textContent = `${name} — ${table.rowCount.toLocaleString()}행`;
+  cleanShown = false;
+  updateFileLabel();
   reanalyze();
+  cleanResults.innerHTML = "";
+  downloadBtn.hidden = true;
   rulesEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -84,40 +116,31 @@ function runClean(): void {
   const report = cleanAndReport(currentTable, { engine: buildOptions() });
   cleanResults.innerHTML = cleanHtml(report);
   cleanedCsv = toCsv(report.clean.table);
+  cleanShown = true;
   downloadBtn.hidden = false;
 }
 
-/** 빈 규칙 묶음. */
 function emptyRules(): IntegrityRuleSet {
   return { sumChecks: [], balanceChecks: [], referentialChecks: [] };
 }
 
-/** 엑셀 확장자 판별. */
 function isXlsxName(name: string): boolean {
   return /\.(xlsx|xls|xlsm)$/i.test(name);
-}
-
-function showError(msg: string): void {
-  resultsEl.innerHTML = `<p class="error-msg">${msg}</p>`;
 }
 
 /** 파일을 읽어 분석(확장자로 CSV/엑셀 분기. 엑셀 파서는 지연 로딩). */
 function handleFile(file: File): void {
   const reader = new FileReader();
-  reader.onerror = () => showError("파일을 읽지 못했습니다.");
-
+  reader.onerror = () => showError("err.read");
   if (isXlsxName(file.name)) {
     reader.onload = async () => {
       try {
         const buf = reader.result;
         if (!(buf instanceof ArrayBuffer)) return;
-        // xlsx 파서(SheetJS)는 엑셀 업로드 시에만 동적 로드 → 초기 번들 경량화.
         const { parseXlsx } = await import("../parse/xlsx.js");
         loadTable(parseXlsx(buf), file.name, emptyRules());
       } catch (err) {
-        showError(
-          `엑셀 분석 실패: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        showError("err.xlsx", err instanceof Error ? err.message : String(err));
       }
     };
     reader.readAsArrayBuffer(file);
@@ -127,9 +150,7 @@ function handleFile(file: File): void {
         const text = typeof reader.result === "string" ? reader.result : "";
         loadTable(parseCsv(text), file.name, emptyRules());
       } catch (err) {
-        showError(
-          `분석 실패: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        showError("err.analyze", err instanceof Error ? err.message : String(err));
       }
     };
     reader.readAsText(file);
@@ -203,7 +224,7 @@ rulesEl.addEventListener("click", (e) => {
   }
 });
 
-// ── 업로드·실행 이벤트 ────────────────────────────────────────
+// ── 업로드·실행·언어 이벤트 ───────────────────────────────────
 
 dropzone.addEventListener("click", () => fileInput.click());
 
@@ -246,3 +267,14 @@ downloadBtn.addEventListener("click", () => {
   a.click();
   URL.revokeObjectURL(url);
 });
+
+langToggle.addEventListener("click", () => {
+  setLocale(getLocale() === "ko" ? "en" : "ko");
+  applyStaticI18n();
+  if (currentTable !== null) reanalyze();
+  if (cleanShown) runClean();
+});
+
+// ── 기동 ──────────────────────────────────────────────────────
+initLocale();
+applyStaticI18n();
