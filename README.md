@@ -19,7 +19,9 @@ npm run build    # 정적 빌드 → dist/ (GitHub Pages 배포용)
 npm run preview  # 빌드 결과 미리보기
 ```
 
-브라우저에서 **CSV를 끌어다 놓거나 "예제 데이터 불러오기"** → 검출 결과(요약·이슈 표)를 보고 → **"자동 정제하기"** → before/after 리포트 확인 → **정제된 CSV 다운로드**. 모든 처리는 브라우저 안에서만 일어나고 파일은 어디로도 전송되지 않습니다.
+브라우저에서 **CSV·엑셀(.xlsx)을 끌어다 놓거나 "예제 데이터 불러오기"** → 검출 결과(요약·이슈 표) 확인 → (선택) **정합성 규칙 추가**(합계·잔액·참조를 내 컬럼에 맞게 UI에서 지정) → **"자동 정제하기"** → before/after 리포트 → **정제된 CSV 다운로드**. 모든 처리는 브라우저 안에서만 일어나고 파일은 어디로도 전송되지 않습니다.
+
+> 엑셀 파서(SheetJS)는 **엑셀 파일을 올릴 때만 지연 로드**되어, CSV 사용자는 경량 번들(gzip ~19KB)만 받습니다.
 
 ---
 
@@ -175,7 +177,8 @@ src/
 ├── engine.ts           # 오케스트레이터: 파싱 → 프로파일 → 4종 검출 → 리포트
 ├── index.ts            # 공개 API 배럴
 ├── parse/
-│   └── csv.ts          # Papa Parse 래퍼 → 표준 ParsedTable
+│   ├── csv.ts          # Papa Parse 래퍼 → 표준 ParsedTable
+│   └── xlsx.ts         # SheetJS 래퍼(.xlsx → ParsedTable, 지연 로드)
 ├── infer/
 │   └── columns.ts      # 컬럼 타입 추론 + 기술통계 프로파일링
 ├── util/
@@ -209,7 +212,7 @@ index.html              # Vite 진입점 (브라우저 로컬 처리)
 
 ```bash
 npm install
-npm test          # vitest 단위 테스트 (204개)
+npm test          # vitest 단위 테스트 (214개)
 npm run test:cov  # 커버리지
 npm run typecheck # tsc --noEmit
 npm run build     # 타입체크 + 정적 빌드(dist/)
@@ -217,7 +220,7 @@ npm run build     # 타입체크 + 정적 빌드(dist/)
 
 요구사항: Node 18+ (개발은 Node 24 LTS).
 
-**테스트:** 204개 통과(코어 엔진·정제·UI 스모크) · 함수 커버리지 100% · 의존성 취약점 0건.
+**테스트:** 214개 통과(코어 엔진·정제·엑셀 파싱·UI 스모크) · 함수 커버리지 100% · 의존성 취약점 0건.
 
 ---
 

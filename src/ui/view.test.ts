@@ -2,8 +2,22 @@ import { describe, expect, it } from "vitest";
 import { cleanAndReport } from "../clean/report.js";
 import { analyzeTable } from "../engine.js";
 import { parseCsv, tableFromRows } from "../parse/csv.js";
-import { cleanHtml, escapeHtml, issuesHtml, resultsHtml, summaryHtml } from "./view.js";
+import {
+  cleanHtml,
+  escapeHtml,
+  issuesHtml,
+  resultsHtml,
+  rulesPanelHtml,
+  summaryHtml,
+} from "./view.js";
+import type { IntegrityRuleSet } from "./view.js";
 import { SAMPLE_CSV, SAMPLE_ENGINE_OPTIONS } from "./sample.js";
+
+const noRules: IntegrityRuleSet = {
+  sumChecks: [],
+  balanceChecks: [],
+  referentialChecks: [],
+};
 
 describe("escapeHtml", () => {
   it("HTML 특수문자를 이스케이프한다", () => {
@@ -50,6 +64,43 @@ describe("XSS 방지", () => {
     expect(html).not.toContain("<script>alert(1)</script>");
     // 헤더 중복 등으로 이슈가 생기며, 메시지/컬럼명은 이스케이프된다.
     expect(html).not.toMatch(/<img>/);
+  });
+});
+
+describe("rulesPanelHtml", () => {
+  it("컬럼 옵션과 추가 폼을 렌더한다", () => {
+    const html = rulesPanelHtml(["a", "b", "total"], noRules);
+    expect(html).toContain("정합성 규칙 추가");
+    expect(html).toContain('data-act="add-sum"');
+    expect(html).toContain('data-act="add-balance"');
+    expect(html).toContain('data-act="add-ref"');
+    expect(html).toContain('value="total"');
+    expect(html).toContain("규칙이 없습니다");
+  });
+
+  it("현재 규칙을 삭제 버튼과 함께 보여준다", () => {
+    const rules: IntegrityRuleSet = {
+      sumChecks: [{ components: ["a", "b"], total: "total" }],
+      balanceChecks: [],
+      referentialChecks: [
+        { column: "status", references: { values: ["paid"] } },
+      ],
+    };
+    const html = rulesPanelHtml(["a", "b", "total", "status"], rules);
+    expect(html).toContain('data-act="del"');
+    expect(html).toContain('data-kind="sum"');
+    expect(html).toContain("a + b");
+    expect(html).toContain('data-kind="ref"');
+  });
+
+  it("헤더의 HTML을 이스케이프한다", () => {
+    const html = rulesPanelHtml(["<x>"], noRules);
+    expect(html).not.toContain("<x>");
+    expect(html).toContain("&lt;x&gt;");
+  });
+
+  it("컬럼이 없으면 빈 문자열", () => {
+    expect(rulesPanelHtml([], noRules)).toBe("");
   });
 });
 

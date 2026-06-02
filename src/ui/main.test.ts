@@ -49,4 +49,40 @@ describe("UI 스모크 (jsdom)", () => {
     expect(cleanResults.innerHTML).toContain("Alice"); // 공백 정리된 값
     expect((byId("download-btn") as HTMLButtonElement).hidden).toBe(false);
   });
+
+  it("정합성 규칙 추가/삭제 → 재분석이 반영된다", () => {
+    const byId = (id: string): HTMLElement => {
+      const node = document.getElementById(id);
+      if (node === null) throw new Error(`#${id} 없음`);
+      return node;
+    };
+    const rules = byId("rules");
+    const results = byId("results");
+
+    // 예제 로드(샘플은 sum 규칙 프리셋) → 규칙 패널·결과 확인
+    (byId("sample-btn") as HTMLButtonElement).click();
+    expect(rules.innerHTML).toContain("정합성 규칙 추가");
+    expect(rules.innerHTML).toContain("합계");
+    expect(results.innerHTML).toContain("sum_mismatch");
+
+    // sum 규칙 삭제 → 재분석 시 sum_mismatch 사라짐
+    const delBtn = rules.querySelector<HTMLButtonElement>(
+      '[data-act="del"][data-kind="sum"]',
+    );
+    expect(delBtn).not.toBeNull();
+    delBtn!.click();
+    expect(results.innerHTML).not.toContain("sum_mismatch");
+
+    // sum 규칙 다시 추가(subtotal+tax=total) → sum_mismatch 재등장
+    const comp = rules.querySelector<HTMLSelectElement>(
+      '[data-f="sum-components"]',
+    )!;
+    Array.from(comp.options).forEach((o) => {
+      o.selected = o.value === "subtotal" || o.value === "tax";
+    });
+    rules.querySelector<HTMLSelectElement>('[data-f="sum-total"]')!.value =
+      "total";
+    rules.querySelector<HTMLButtonElement>('[data-act="add-sum"]')!.click();
+    expect(results.innerHTML).toContain("sum_mismatch");
+  });
 });

@@ -10,6 +10,8 @@ export { analyzeTable, analyzeCsv } from "./engine.js";
 // 파싱
 export { parseCsv, tableFromRows, toCsv } from "./parse/csv.js";
 export type { ParseCsvOptions } from "./parse/csv.js";
+export { parseXlsx, isXlsxFilename } from "./parse/xlsx.js";
+export type { ParseXlsxOptions } from "./parse/xlsx.js";
 
 // 정제(clean)
 export { cleanTable } from "./clean/clean.js";

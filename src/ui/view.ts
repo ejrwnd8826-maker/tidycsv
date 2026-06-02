@@ -7,7 +7,21 @@
  */
 
 import type { CleanReport } from "../clean/report.js";
-import type { AnalysisReport, Issue, IssueCategory } from "../types.js";
+import type {
+  AnalysisReport,
+  BalanceCheck,
+  Issue,
+  IssueCategory,
+  ReferentialCheck,
+  SumCheck,
+} from "../types.js";
+
+/** UI 에서 편집하는 정합성 규칙 묶음. */
+export interface IntegrityRuleSet {
+  sumChecks: SumCheck[];
+  balanceChecks: BalanceCheck[];
+  referentialChecks: ReferentialCheck[];
+}
 
 const CATEGORY_LABEL: Record<IssueCategory, string> = {
   duplicate: "중복",
@@ -98,6 +112,85 @@ export function issuesHtml(report: AnalysisReport): string {
 /** 분석 결과 전체(요약 + 이슈). */
 export function resultsHtml(report: AnalysisReport): string {
   return summaryHtml(report) + issuesHtml(report);
+}
+
+// ── 정합성 규칙 패널 ──────────────────────────────────────────
+
+function options(headers: string[]): string {
+  return headers
+    .map((h) => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`)
+    .join("");
+}
+
+/** 현재 등록된 규칙 목록(삭제 버튼 포함). */
+function currentRulesHtml(rules: IntegrityRuleSet): string {
+  const items: string[] = [];
+  rules.sumChecks.forEach((r, i) => {
+    items.push(
+      `<li>합계: <code>${r.components.map(escapeHtml).join(" + ")}</code> = <code>${escapeHtml(r.total)}</code> <button class="btn-del" data-act="del" data-kind="sum" data-idx="${i}">삭제</button></li>`,
+    );
+  });
+  rules.balanceChecks.forEach((r, i) => {
+    items.push(
+      `<li>잔액: <code>${escapeHtml(r.balance)}</code> = 직전 + <code>${escapeHtml(r.amount)}</code> <button class="btn-del" data-act="del" data-kind="balance" data-idx="${i}">삭제</button></li>`,
+    );
+  });
+  rules.referentialChecks.forEach((r, i) => {
+    const ref =
+      "column" in r.references
+        ? `컬럼 <code>${escapeHtml(r.references.column)}</code>`
+        : `값 [${r.references.values.map(escapeHtml).join(", ")}]`;
+    items.push(
+      `<li>참조: <code>${escapeHtml(r.column)}</code> ∈ ${ref} <button class="btn-del" data-act="del" data-kind="ref" data-idx="${i}">삭제</button></li>`,
+    );
+  });
+  if (items.length === 0) {
+    return `<p class="empty">아직 규칙이 없습니다. 위에서 컬럼을 골라 추가하세요.</p>`;
+  }
+  return `<ul class="rule-list">${items.join("")}</ul>`;
+}
+
+/** 정합성 규칙 추가 패널(헤더 컬럼 기반 폼 + 현재 규칙 목록). */
+export function rulesPanelHtml(
+  headers: string[],
+  rules: IntegrityRuleSet,
+): string {
+  if (headers.length === 0) return "";
+  const opt = options(headers);
+  return `
+<section class="rules-panel">
+  <h2>정합성 규칙 추가 <span class="hint">(합계·잔액·참조 — 내 데이터에 맞게 지정)</span></h2>
+  <div class="rule-forms">
+    <div class="rule-form">
+      <strong>합계 검증</strong>
+      <label>구성요소 (Ctrl+클릭 다중 선택)</label>
+      <select multiple size="4" data-f="sum-components">${opt}</select>
+      <label>합계 컬럼</label>
+      <select data-f="sum-total">${opt}</select>
+      <button class="btn" data-act="add-sum">+ 합계 규칙</button>
+    </div>
+    <div class="rule-form">
+      <strong>잔액 검증</strong>
+      <label>증감액</label>
+      <select data-f="bal-amount">${opt}</select>
+      <label>잔액(누적)</label>
+      <select data-f="bal-balance">${opt}</select>
+      <button class="btn" data-act="add-balance">+ 잔액 규칙</button>
+    </div>
+    <div class="rule-form">
+      <strong>참조 무결성</strong>
+      <label>검사 컬럼</label>
+      <select data-f="ref-column">${opt}</select>
+      <label>참조 컬럼</label>
+      <select data-f="ref-refcol"><option value="">(허용값 직접입력)</option>${opt}</select>
+      <label>또는 허용값(쉼표 구분)</label>
+      <input type="text" data-f="ref-values" placeholder="paid, pending, shipped" />
+      <button class="btn" data-act="add-ref">+ 참조 규칙</button>
+    </div>
+  </div>
+  <h3>현재 규칙</h3>
+  ${currentRulesHtml(rules)}
+</section>`;
 }
 
 /** 정제 before/after 섹션. */
