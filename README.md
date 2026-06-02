@@ -6,7 +6,7 @@
 
 🔗 **[라이브 데모](https://ejrwnd8826-maker.github.io/tidycsv/)** · **[GitHub](https://github.com/ejrwnd8826-maker/tidycsv)**
 
-> **상태:** 1~3주차 완료 — 코어 엔진(4종 검출) + 자동 정제·리포트 + **웹 UI(드래그앤드롭·결과 표시·CSV 다운로드, 브라우저 로컬)**. 남은 단계: GitHub 공개·배포.
+> **상태:** ✅ 1~4주차 완료 — 코어 엔진(4종 검출) + 자동 정제·리포트 + 웹 UI + **GitHub Pages 라이브 배포**. [지금 바로 써보기 →](https://ejrwnd8826-maker.github.io/tidycsv/)
 
 ---
 
@@ -234,7 +234,8 @@ npm run build     # 타입체크 + 정적 빌드(dist/)
 - [x] **1주차** — 코어 정합성 엔진 (CSV 파싱 + 4종 검출 + 단위 테스트)
 - [x] **2주차** — 자동 정리(정제) + before/after 리포트 생성
 - [x] **3주차** — UI(드래그앤드롭 업로드·결과 표시·다운로드) + 로컬 처리 마감
-- [ ] **4주차** — GitHub 공개(README·데모 GIF·라이브 배포)
+- [x] **4주차** — GitHub 공개·라이브 배포(GitHub Pages, Actions 자동배포)
+  - 남은 선택 항목: 데모 GIF 녹화, 후원 버튼(GitHub Sponsors/Buy me a coffee)
 
 ## 라이선스
 
