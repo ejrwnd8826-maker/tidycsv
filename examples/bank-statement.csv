@@ -1,0 +1,6 @@
+date,description,amount,balance
+2024-03-01,Opening balance,0,1000
+2024-03-02,Coffee shop,-5,995
+2024-03-03,Salary,2000,2995
+2024-03-05,Rent payment,-800,2200
+2024-03-06,Refund,50,2250

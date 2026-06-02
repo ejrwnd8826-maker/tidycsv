@@ -1,0 +1,35 @@
+{
+  "name": "tidycsv",
+  "version": "0.1.0",
+  "description": "지저분한 CSV/엑셀을 넣으면 중복·포맷오류·이상치·정합성 불일치를 잡아 정리하고 리포트해 주는 브라우저 로컬 데이터 정제·검증 도구. 무 LLM·결정론적.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "csv",
+    "data-cleaning",
+    "data-validation",
+    "data-integrity",
+    "reconciliation",
+    "deduplication"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "papaparse": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.14",
+    "@vitest/coverage-v8": "^4.1.8",
+    "jsdom": "^29.1.1",
+    "typescript": "^5.7.2",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
+  }
+}

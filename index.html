@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tidycsv — CSV 데이터 정제·검증</title>
+    <meta
+      name="description"
+      content="지저분한 CSV를 브라우저에서 바로 검증·정제. 중복·포맷·이상치·정합성 불일치를 잡아 리포트합니다. 데이터는 서버로 나가지 않습니다."
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>tidy<span>csv</span></h1>
+      <p class="tagline">
+        지저분한 CSV를 넣으면 <strong>중복·포맷오류·이상치·정합성 불일치</strong>를
+        잡아 정리하고 리포트합니다.
+      </p>
+      <p class="privacy">🔒 데이터는 브라우저를 벗어나지 않습니다 · 무 LLM · 결정론적</p>
+    </header>
+
+    <main>
+      <div id="dropzone" class="dropzone" role="button" tabindex="0">
+        <div class="dz-inner">
+          <div class="dz-icon">⬆</div>
+          <div class="dz-text">CSV 파일을 끌어다 놓거나 <u>클릭해 선택</u></div>
+          <div class="dz-sub">또는</div>
+          <button id="sample-btn" type="button" class="btn btn-ghost">
+            예제 데이터 불러오기
+          </button>
+        </div>
+        <input id="file-input" type="file" accept=".csv,text/csv" hidden />
+      </div>
+      <p id="file-label" class="file-label"></p>
+
+      <div id="results" class="results"></div>
+
+      <div id="clean-actions" class="clean-actions" hidden>
+        <button id="clean-btn" type="button" class="btn btn-primary">
+          🧹 자동 정제하기
+        </button>
+        <button id="download-btn" type="button" class="btn btn-download" hidden>
+          ⬇ 정제된 CSV 다운로드
+        </button>
+      </div>
+
+      <div id="clean-results" class="clean-results"></div>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        tidycsv · 오픈소스 데이터 정합성 도구 ·
+        <a href="https://github.com/ejrwnd8826-maker/tidycsv" rel="noopener"
+          >GitHub</a
+        >
+      </p>
+    </footer>
+
+    <script type="module" src="/src/ui/main.ts"></script>
+  </body>
+</html>
