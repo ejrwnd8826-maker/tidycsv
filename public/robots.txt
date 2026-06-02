@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ejrwnd8826-maker.github.io/tidycsv/sitemap.xml
