@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ejrwnd8826-maker.github.io/tidycsv/sitemap.xml
+Sitemap: https://duke-yoon.github.io/tidycsv/sitemap.xml

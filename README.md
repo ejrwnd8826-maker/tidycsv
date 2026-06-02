@@ -4,9 +4,9 @@
 
 데이터는 서버로 나가지 않고 전부 브라우저(또는 Node) 안에서 처리됩니다. 규칙 기반 결정론적 엔진이라 같은 입력은 항상 같은 결과를 냅니다.
 
-🔗 **[라이브 데모](https://ejrwnd8826-maker.github.io/tidycsv/)** · **[GitHub](https://github.com/ejrwnd8826-maker/tidycsv)**
+🔗 **[라이브 데모](https://duke-yoon.github.io/tidycsv/)** · **[GitHub](https://github.com/duke-yoon/tidycsv)**
 
-> **상태:** ✅ 1~4주차 완료 — 코어 엔진(4종 검출) + 자동 정제·리포트 + 웹 UI + **GitHub Pages 라이브 배포**. [지금 바로 써보기 →](https://ejrwnd8826-maker.github.io/tidycsv/)
+> **상태:** ✅ 1~4주차 완료 — 코어 엔진(4종 검출) + 자동 정제·리포트 + 웹 UI + **GitHub Pages 라이브 배포**. [지금 바로 써보기 →](https://duke-yoon.github.io/tidycsv/)
 
 ---
 
