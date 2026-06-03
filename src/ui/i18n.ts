@@ -66,6 +66,7 @@ const KO: Dict = {
   "btn.sample": "예제 데이터 불러오기",
   "btn.clean": "🧹 자동 정제하기",
   "btn.download": "⬇ 정제된 CSV 다운로드",
+  "btn.star": "⭐ GitHub에서 Star",
   "footer.text": "tidycsv · 오픈소스 데이터 정합성 도구 ·",
   // 요약
   "summary.analyzed": "{rows}행 · {cols}열 분석 완료",
@@ -139,6 +140,7 @@ const EN: Dict = {
   "btn.sample": "Load sample data",
   "btn.clean": "🧹 Auto-clean",
   "btn.download": "⬇ Download cleaned CSV",
+  "btn.star": "⭐ Star on GitHub",
   "footer.text": "tidycsv · open-source data integrity tool ·",
   "summary.analyzed": "{rows} rows · {cols} cols analyzed",
   "summary.total": "Total issues",
